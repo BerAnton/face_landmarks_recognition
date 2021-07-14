@@ -1,0 +1,17 @@
+# Python venvs
+.venv/
+
+# Jupyter NB Checkpoints
+.ipynb_checkpoints/
+
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+
+# Data and models folders
+/data/
+/models/
+/submits/
+/predictions/
+
+blend.ipynb
