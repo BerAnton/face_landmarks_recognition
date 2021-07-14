@@ -1,0 +1,10 @@
+input_data_path: "data/test"
+output_data_path: "output/"
+output_filename: "predictions.pkl"
+csv_filename: "predictions.csv"
+model_path: "models/"
+model_name: "landmarks.pth"
+batch_size: 32
+crop_size: 128
+num_pts: 971
+use_cuda: True

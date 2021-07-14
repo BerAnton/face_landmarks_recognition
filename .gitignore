@@ -14,4 +14,6 @@ __pycache__/
 /submits/
 /predictions/
 
+
 blend.ipynb
+facial_landmark_recognition.ipynb

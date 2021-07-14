@@ -1,0 +1,10 @@
+input_data_path: "data/example_train"
+model_save_path: "models/"
+model_name: "landmarks.pth"
+train_dataset_size: 0.8
+crop_size: 128
+batch_size: 32
+learning_rate: 0.0001
+epochs: 60
+num_pts: 971
+use_cuda: True
