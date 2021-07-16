@@ -1,10 +1,13 @@
 import os
+from pathlib import Path
+from typing import Dict, List, Any, Union
 
 import numpy as np
 import cv2
 import tqdm
 import torch
 from torch.utils import data
+from torchvision.transforms import transforms
 
 
 class ThousandLandmarksDataset(data.Dataset):
@@ -20,18 +23,18 @@ class ThousandLandmarksDataset(data.Dataset):
      :returns:
          - torch.data.Dataset object."""
 
-    def __init__(self, root: str, transforms: list, split="train", train_size=0.8):
+    def __init__(
+        self, root: Path, transforms: transforms.Compose, split: str = "train", train_size: float = 0.8
+    ) -> None:
         super(ThousandLandmarksDataset, self).__init__()
         self.root = root
         landmark_file_name = (
-            os.path.join(root, "landmarks.csv")
-            if split != "test"
-            else os.path.join(root, "test_points.csv")
+            os.path.join(root, "landmarks.csv") if split != "test" else os.path.join(root, "test_points.csv")
         )
         images_root = os.path.join(root, "images")
 
         self.image_names = []
-        self.landmarks = []
+        self.landmarks = []  # type: Union[List[Any], np.ndarray, torch.Tensor, None]
 
         with open(landmark_file_name, "rt") as fp:
             num_lines = sum(1 for line in fp)
@@ -51,9 +54,7 @@ class ThousandLandmarksDataset(data.Dataset):
 
                 if split in ("train", "val"):
                     landmarks = list(map(np.int, elements[1:]))
-                    landmarks = np.array(landmarks, dtype=np.int).reshape(
-                        (len(landmarks) // 2, 2)
-                    )
+                    landmarks = np.array(landmarks, dtype=np.int).reshape((len(landmarks) // 2, 2))
                     self.landmarks.append(landmarks)
 
         if split in ("train", "val"):
@@ -63,7 +64,7 @@ class ThousandLandmarksDataset(data.Dataset):
 
         self.transforms = transforms
 
-    def __getitem__(self, idx):
+    def __getitem__(self, idx: int) -> Dict[Any, Any]:
         sample = {}
         if self.landmarks is not None:
             landmarks = self.landmarks[idx]
@@ -78,5 +79,5 @@ class ThousandLandmarksDataset(data.Dataset):
 
         return sample
 
-    def __len__(self):
+    def __len__(self) -> int:
         return len(self.image_names)

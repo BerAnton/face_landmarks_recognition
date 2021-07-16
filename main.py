@@ -1,6 +1,6 @@
 """Main module for running train and prediction pipelines"""
 
-from argparse import ArgumentParser, ArgumentDefaultsHelpFormatter
+from argparse import ArgumentParser, ArgumentDefaultsHelpFormatter, Namespace
 import logging
 
 import torch
@@ -13,15 +13,18 @@ logger = logging.getLogger(__name__)
 DEFAULT_TRAIN_CONFIG_PATH = "./configs/train_params.yml"
 DEFAULT_PREDICT_CONFIG_PATH = "./configs/predict_params.yml"
 
-def callback_train(arguments):
+
+def callback_train(arguments: Namespace) -> None:
     """callback for train model"""
     train_pipeline(arguments.config_path)
 
-def callback_predict(arguments):
+
+def callback_predict(arguments: Namespace) -> None:
     """callback for make prediction"""
     predict_pipeline(arguments.config_path)
 
-def setup_parser(parser):
+
+def setup_parser(parser: ArgumentParser) -> None:
     """Setup CLI-parser"""
     subparsers = parser.add_subparsers(help="choose mode: train or predict")
     train_parser = subparsers.add_parser(
@@ -38,19 +41,17 @@ def setup_parser(parser):
     predict_parser.set_defaults(callback=callback_predict)
 
     train_parser.add_argument(
-        "--config-path",
-        default=DEFAULT_TRAIN_CONFIG_PATH,
-        help="path to train config, default path is %(default)s"
+        "--config-path", default=DEFAULT_TRAIN_CONFIG_PATH, help="path to train config, default path is %(default)s"
     )
 
     predict_parser.add_argument(
         "--config-path",
         default=DEFAULT_PREDICT_CONFIG_PATH,
-        help="path to predict config, default path is %(default)s"
+        help="path to predict config, default path is %(default)s",
     )
 
 
-def main():
+def main() -> None:
     torch.backends.cudnn.deterministic = True
     torch.backends.cudnn.benchmark = False
     parser = ArgumentParser(
@@ -60,6 +61,7 @@ def main():
     setup_parser(parser)
     arguments = parser.parse_args()
     arguments.callback(arguments)
+
 
 if __name__ == "__main__":
     main()

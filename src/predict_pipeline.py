@@ -1,6 +1,7 @@
 import os
 import yaml
 import pickle
+from pathlib import Path
 
 import tqdm
 import numpy as np
@@ -9,37 +10,32 @@ from torch.utils.data import DataLoader
 from torchvision import transforms
 
 from src.model import LandmarkModel
-from src.utils import restore_landmarks_batch, make_csv
+from src.utils import restore_landmarks_batch
+from src.utils.make_csv import create_csv
 from src.data import ThousandLandmarksDataset
 from src.transforms import ScaleMinSideToSize, CropCenter, TransformByKeys
 
 
-def predict(model, loader, device, num_pts):
+def predict(model: LandmarkModel, loader: DataLoader, device: torch.device, num_pts: int) -> np.ndarray:
     model.eval()
     predictions = np.zeros((len(loader.dataset), num_pts, 2))
-    for i, batch in enumerate(
-        tqdm.tqdm(loader, total=len(loader), desc="Test prediction...")
-    ):
+    for i, batch in enumerate(tqdm.tqdm(loader, total=len(loader), desc="Test prediction...")):
         images = batch["image"].to(device)
 
         with torch.no_grad():
             pred_landmarks = model(images).cpu()
-        pred_landmarks = pred_landmarks.numpy().reshape(
-            (len(pred_landmarks), num_pts, 2)
-        )  # B * NUM_PTS * 2
+        pred_landmarks = pred_landmarks.numpy().reshape((len(pred_landmarks), num_pts, 2))  # B * NUM_PTS * 2
 
         fs = batch["scale_coef"].numpy()  # B
         margins_x = batch["crop_margin_x"].numpy()  # B
         margins_y = batch["crop_margin_y"].numpy()  # B
-        prediction = restore_landmarks_batch(
-            pred_landmarks, fs, margins_x, margins_y
-        )  # B * NUM_PTS * 2
+        prediction = restore_landmarks_batch(pred_landmarks, fs, margins_x, margins_y)  # B * NUM_PTS * 2
         predictions[i * loader.batch_size : (i + 1) * loader.batch_size] = prediction
 
     return predictions
 
 
-def predict_pipeline(predict_config_path):
+def predict_pipeline(predict_config_path: Path) -> None:
     """Train pipeline for landmarks recognition.
     :args:
          - predict_config_path - path to config with predict params."""
@@ -48,12 +44,8 @@ def predict_pipeline(predict_config_path):
         predict_config = yaml.safe_load(fin)
 
     input_data_path = predict_config["input_data_path"]
-    output_path = os.path.join(
-        predict_config["output_data_path"], predict_config["output_filename"]
-    )
-    model_path = os.path.join(
-        predict_config["model_path"], predict_config["model_name"]
-    )
+    output_path = os.path.join(predict_config["output_data_path"], predict_config["output_filename"])
+    model_path = os.path.join(predict_config["model_path"], predict_config["model_name"])
     batch_size = predict_config["batch_size"]
     crop_size = predict_config["crop_size"]
     num_pts = predict_config["num_pts"]
@@ -76,9 +68,7 @@ def predict_pipeline(predict_config_path):
     device = torch.device("cuda") if cuda else torch.device("cpu")
 
     print("Data loadnig")
-    test_dataset = ThousandLandmarksDataset(
-        input_data_path, test_transforms, split="test"
-    )
+    test_dataset = ThousandLandmarksDataset(input_data_path, test_transforms, split="test")
     test_dataloader = DataLoader(
         test_dataset,
         batch_size=batch_size,
@@ -88,7 +78,7 @@ def predict_pipeline(predict_config_path):
         drop_last=False,
     )
 
-    model = LandmarkModel()
+    model = LandmarkModel(num_pts)
     with open(model_path, "rb") as fin:
         best_state_dict = torch.load(fin, map_location=device)
         model.load_state_dict(best_state_dict)
@@ -101,4 +91,4 @@ def predict_pipeline(predict_config_path):
             fout,
         )
 
-    make_csv(input_data_path, output_path, csv_file_name)
+    create_csv(input_data_path, output_path, csv_file_name)

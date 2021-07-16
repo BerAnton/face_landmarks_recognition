@@ -2,6 +2,8 @@ import os
 import yaml
 import logging
 import math
+from pathlib import Path
+from typing import Callable
 
 import tqdm
 import numpy as np
@@ -9,14 +11,16 @@ import torch
 from torch.utils.data import DataLoader
 from torchvision import transforms
 import torch.nn as nn
-import torch.optim as optim
+from torch.optim import AdamW, Optimizer, lr_scheduler
 
 from src.model import LandmarkModel
 from src.data import ThousandLandmarksDataset
 from src.transforms import ScaleMinSideToSize, CropCenter, TransformByKeys
 
 
-def train(model, loader, loss_fn, optimizer, device):
+def train(
+    model: LandmarkModel, loader: DataLoader, loss_fn: Callable, optimizer: Optimizer, device: torch.device
+) -> float:
     """Train loop for model.
     :args:
          - model - torch model to train.
@@ -40,7 +44,7 @@ def train(model, loader, loss_fn, optimizer, device):
     return np.mean(train_loss)
 
 
-def validate(model, loader, loss_fn, device):
+def validate(model: LandmarkModel, loader: DataLoader, loss_fn: Callable, device: torch.device) -> float:
     """Function for model validation.
     :args:
          - model - torch model to validate.
@@ -61,7 +65,7 @@ def validate(model, loader, loss_fn, device):
     return np.mean(val_loss)
 
 
-def train_pipeline(train_config_path):
+def train_pipeline(train_config_path: Path) -> None:
     """Train pipeline for landmarks recognition.
     :args:
          - train_config_path - path to config with train params."""
@@ -94,9 +98,7 @@ def train_pipeline(train_config_path):
     )
 
     print("Data loading")
-    train_dataset = ThousandLandmarksDataset(
-        input_data_path, train_transforms, split="train", train_size=train_size
-    )
+    train_dataset = ThousandLandmarksDataset(input_data_path, train_transforms, split="train", train_size=train_size)
     train_dataloader = DataLoader(
         train_dataset,
         batch_size=batch_size,
@@ -106,9 +108,7 @@ def train_pipeline(train_config_path):
         drop_last=True,
     )
 
-    val_dataset = ThousandLandmarksDataset(
-        input_data_path, train_transforms, split="val", train_size=train_size
-    )
+    val_dataset = ThousandLandmarksDataset(input_data_path, train_transforms, split="val", train_size=train_size)
     val_dataloader = DataLoader(
         val_dataset,
         batch_size=batch_size,
@@ -127,9 +127,9 @@ def train_pipeline(train_config_path):
     model.requires_grad_(True)
 
     # define optimizer and scheduler
-    optimizer = optim.AdamW(model.parameters(), lr=lr, amsgrad=True)
+    optimizer = AdamW(model.parameters(), lr=lr, amsgrad=True)
     Q = math.floor(len(train_dataset) / batch_size)
-    scheduler = optim.lr_scheduler.CosineAnnealingLR(optimizer, Q)
+    scheduler = lr_scheduler.CosineAnnealingLR(optimizer, Q)
     loss_fn = nn.L1Loss()
 
     # train loop
@@ -138,11 +138,7 @@ def train_pipeline(train_config_path):
         train_loss = train(model, train_dataloader, loss_fn, optimizer, device=device)
         val_loss = validate(model, val_dataloader, loss_fn, device=device)
         scheduler.step(val_loss)
-        print(
-            "Epoch #{:2}:\ttrain loss: {:5.2}\tval loss: {:5.2}".format(
-                epoch + 1, train_loss, val_loss
-            )
-        )
+        print("Epoch #{:2}:\ttrain loss: {:5.2}\tval loss: {:5.2}".format(epoch + 1, train_loss, val_loss))
         if val_loss < best_val_loss:
             best_val_loss = val_loss
             with open(os.path.join(model_save_path, model_name), "wb") as fp:
