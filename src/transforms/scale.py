@@ -1,13 +1,15 @@
 import numpy as np
 import cv2
 
+
 class ScaleMinSideToSize(object):
     """Rescales image.
-        :args: 
-            - sample - image to rescale
-        :returns:
-            - sample - rescaled image."""
-    def __init__(self, size, elem_name='image'):
+    :args:
+        - sample - image to rescale
+    :returns:
+        - sample - rescaled image."""
+
+    def __init__(self, size, elem_name="image"):
         self.size = np.asarray(size, dtype=np.float)
         self.elem_name = elem_name
 
@@ -18,12 +20,14 @@ class ScaleMinSideToSize(object):
         else:
             f = self.size[1] / h
 
-        sample[self.elem_name] = cv2.resize(sample[self.elem_name], None, fx=f, fy=f, interpolation=cv2.INTER_AREA)
+        sample[self.elem_name] = cv2.resize(
+            sample[self.elem_name], None, fx=f, fy=f, interpolation=cv2.INTER_AREA
+        )
         sample["scale_coef"] = f
 
-        if 'landmarks' in sample:
-            landmarks = sample['landmarks'].reshape(-1, 2).float()
+        if "landmarks" in sample:
+            landmarks = sample["landmarks"].reshape(-1, 2).float()
             landmarks = landmarks * f
-            sample['landmarks'] = landmarks.reshape(-1)
+            sample["landmarks"] = landmarks.reshape(-1)
 
         return sample

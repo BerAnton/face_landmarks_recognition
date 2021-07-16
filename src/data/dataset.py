@@ -9,22 +9,25 @@ from torch.utils import data
 
 class ThousandLandmarksDataset(data.Dataset):
     """Describes dataset format. Data should be put in folder
-       with csv file for train/valdidation purpose r without it
-       for prediction. Example of dataset could be find in root folder.
-       
-       :args:
-            - root - folder with dataset.
-            - transforms - list of transforms for dataset.
-            - split - could be train, val or test, default is train.
-            - train_size - size of train partition of dataset, default is 0.8
-        :returns:
-            - torch.data.Dataset object."""
-       
+    with csv file for train/valdidation purpose r without it
+    for prediction. Example of dataset could be find in root folder.
+
+    :args:
+         - root - folder with dataset.
+         - transforms - list of transforms for dataset.
+         - split - could be train, val or test, default is train.
+         - train_size - size of train partition of dataset, default is 0.8
+     :returns:
+         - torch.data.Dataset object."""
+
     def __init__(self, root: str, transforms: list, split="train", train_size=0.8):
         super(ThousandLandmarksDataset, self).__init__()
         self.root = root
-        landmark_file_name = os.path.join(root, 'landmarks.csv') if split != "test" \
+        landmark_file_name = (
+            os.path.join(root, "landmarks.csv")
+            if split != "test"
             else os.path.join(root, "test_points.csv")
+        )
         images_root = os.path.join(root, "images")
 
         self.image_names = []
@@ -48,7 +51,9 @@ class ThousandLandmarksDataset(data.Dataset):
 
                 if split in ("train", "val"):
                     landmarks = list(map(np.int, elements[1:]))
-                    landmarks = np.array(landmarks, dtype=np.int).reshape((len(landmarks) // 2, 2))
+                    landmarks = np.array(landmarks, dtype=np.int).reshape(
+                        (len(landmarks) // 2, 2)
+                    )
                     self.landmarks.append(landmarks)
 
         if split in ("train", "val"):
