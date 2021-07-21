@@ -10,7 +10,7 @@ Libs can be obtained via requirements:<br>
 ``` pip install -r requirements.txt ```
 
 # Configure train and predict process:
-Folder "configs" contains two yml files:
+Folder "configs" contains two yml files:<br>
     - train_params.yml - describes configuration of train process.<br>
     - predict_params.yml - describes configuration of prediction process.
 
